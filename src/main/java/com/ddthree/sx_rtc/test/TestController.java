@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/test")
-@Api(tags = "测试接口",description="测试文档说明",hidden=true)
+@Api(tags = "测试接口", description = "测试文档说明", hidden = true)
 public class TestController {
 
-    @RequestMapping(value = "/swaggerDemo", method = { RequestMethod.POST })
+    @RequestMapping(value = "/swaggerDemo", method = {RequestMethod.POST})
     @ResponseBody
     @ApiOperation(value = "测试接口1", notes = "测试接口1说明")
     @ApiImplicitParams({
@@ -19,7 +19,7 @@ public class TestController {
             @ApiImplicitParam(name = "age", value = "18", dataType = "int", paramType = "query")
     })
     @ApiResponse(response = String.class, code = 200, message = "接口返回对象参数")
-    public String swaggerDemo(String name, String age){
+    public String swaggerDemo(String name, String age) {
         return "name = " + name + ", age = " + age;
     }
 
