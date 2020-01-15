@@ -30,15 +30,18 @@ public class SXChatEngineImpl implements SXChatEngine {
      */
     private final HashMap<String, MsgHolder> holders = new HashMap<>();
 
+
     @Override
-    public void pushMsg(@Nonnull SXMsg msg) {
+    public void pushMsg(@Nonnull SXMsg[] msgs) {
         rwLock.readLock().lock();
         try {
-            MsgHolder waiter = holders.get(msg.getUserTo());
-            if (waiter == null) {
-                throw new IllegalStateException("用户未登录");
-            } else {
-                waiter.putMsg(msg);
+            for (SXMsg msg : msgs) {
+                if (holders.containsKey(msg.getAddrFrom())) {
+                    MsgHolder holder = holders.get(msg.getAddrTo());
+                    if (holder != null) {
+                        holder.putMsg(msg);
+                    }
+                }
             }
         } finally {
             rwLock.readLock().unlock();
@@ -47,10 +50,10 @@ public class SXChatEngineImpl implements SXChatEngine {
 
     @Nonnull
     @Override
-    public SXMsg[] pullMsg(@Nonnull SXUser user, long millis) {
+    public SXMsg[] pullMsg(@Nonnull String addr, long millis) {
         rwLock.readLock().lock();
         try {
-            MsgHolder waiter = holders.get(user.getId());
+            MsgHolder waiter = holders.get(addr);
             if (waiter == null) {
                 throw new IllegalStateException("用户未登录");
             } else {
@@ -62,13 +65,13 @@ public class SXChatEngineImpl implements SXChatEngine {
     }
 
     @Override
-    public void login(@Nonnull SXUser user) {
+    public void login(@Nonnull String addr) {
         rwLock.writeLock().lock();
         try {
-            MsgHolder waiter = holders.get(user.getId());
+            MsgHolder waiter = holders.get(addr);
             if (waiter == null) {
-                waiter = new MsgHolder(user);
-                holders.put(user.getId(), waiter);
+                waiter = new MsgHolder();
+                holders.put(addr, waiter);
             } else {
                 waiter.setLastGet(System.currentTimeMillis());
             }
@@ -78,10 +81,10 @@ public class SXChatEngineImpl implements SXChatEngine {
     }
 
     @Override
-    public void logout(@Nonnull SXUser user) {
+    public void logout(@Nonnull String addr) {
         rwLock.writeLock().lock();
         try {
-            holders.remove(user.getId());
+            holders.remove(addr);
         } finally {
             rwLock.writeLock().unlock();
         }
@@ -97,18 +100,12 @@ public class SXChatEngineImpl implements SXChatEngine {
     public static class MsgHolder {
         private static final SXMsg[] ARR0 = new SXMsg[0];
 
-        @Getter
-        private final SXUser user;
         private final LinkedList<SXMsg> msgs = new LinkedList<>();
         private final Semaphore semaphore = new Semaphore(0);
 
         @Getter
         @Setter
         private long lastGet = System.currentTimeMillis();
-
-        public MsgHolder(SXUser user) {
-            this.user = user;
-        }
 
         synchronized final void putMsg(@Nonnull SXMsg msg) {
             msgs.add(msg);

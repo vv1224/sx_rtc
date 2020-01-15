@@ -12,12 +12,12 @@ import javax.annotation.Nonnull;
  */
 public interface SXChatEngine {
 
-    void pushMsg(@Nonnull SXMsg msg);
+    void pushMsg(@Nonnull SXMsg[] msg);
 
     @Nonnull
-    SXMsg[] pullMsg(@Nonnull SXUser user, long millis);
+    SXMsg[] pullMsg(@Nonnull String addr, long millis);
 
-    void login(@Nonnull SXUser user);
+    void login(@Nonnull String addr);
 
-    void logout(@Nonnull SXUser user);
+    void logout(@Nonnull String addr);
 }
