@@ -16,8 +16,4 @@ public class IDGenerator {
     public static String genMsgId() {
         return String.valueOf(System.currentTimeMillis()) + COUNTER.getAndIncrement() % 1000000;
     }
-
-    public static String genUserId() {
-        return "U" + System.currentTimeMillis() + COUNTER.getAndIncrement() % 1000000;
-    }
 }

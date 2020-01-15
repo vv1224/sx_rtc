@@ -18,9 +18,9 @@ public class SXMsg {
     private final String id = IDGenerator.genMsgId();
 
     @Nonnull
-    private final String userFrom;
+    private final String addrFrom;
     @Nonnull
-    private final String userTo;
+    private final String addrTo;
     @Nonnull
     private final String content;
 }

@@ -9,5 +9,4 @@ class SxRtcApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }
