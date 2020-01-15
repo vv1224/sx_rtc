@@ -1,4 +1,4 @@
-package com.ddthree.sx_rtc.controller;
+package com.ddthree.sx_rtc.api;
 
 import com.ddthree.sx_rtc.engine.SXChatEngine;
 import com.ddthree.sx_rtc.engine.SXMsg;
@@ -26,7 +26,7 @@ public class MsgController {
 
     @PostMapping("/pull")
     public XResult<SXMsg[]> userLogin(@RequestParam("addr") String addr) {
-        return XResult.success(sxChatEngine.pullMsg(addr, 3000));
+        return XResult.success(sxChatEngine.pullMsg(addr, 30000));
     }
 
     @PostMapping("/push")

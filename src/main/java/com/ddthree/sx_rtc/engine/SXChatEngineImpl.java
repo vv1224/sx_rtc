@@ -5,11 +5,10 @@ import lombok.Setter;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * 聊天引擎
@@ -22,72 +21,43 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Component
 public class SXChatEngineImpl implements SXChatEngine {
     /**
-     * MAP读写锁
-     */
-    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
-    /**
      * 用户id => 消息缓存
      */
-    private final HashMap<String, MsgHolder> holders = new HashMap<>();
+    private final ConcurrentHashMap<String, MsgHolder> holders = new ConcurrentHashMap<>();
 
 
     @Override
     public void pushMsg(@Nonnull SXMsg[] msgs) {
-        rwLock.readLock().lock();
-        try {
-            for (SXMsg msg : msgs) {
-                if (holders.containsKey(msg.getAddrFrom())) {
-                    MsgHolder holder = holders.get(msg.getAddrTo());
-                    if (holder != null) {
-                        holder.putMsg(msg);
-                    }
+        for (SXMsg msg : msgs) {
+            if (holders.containsKey(msg.getAddrFrom())) {
+                MsgHolder holder = holders.get(msg.getAddrTo());
+                if (holder != null) {
+                    holder.putMsg(msg);
                 }
             }
-        } finally {
-            rwLock.readLock().unlock();
         }
     }
 
     @Nonnull
     @Override
     public SXMsg[] pullMsg(@Nonnull String addr, long millis) {
-        rwLock.readLock().lock();
-        try {
-            MsgHolder waiter = holders.get(addr);
-            if (waiter == null) {
-                throw new IllegalStateException("用户未登录");
-            } else {
-                return waiter.getMsg(millis);
-            }
-        } finally {
-            rwLock.readLock().unlock();
+        MsgHolder holder = holders.get(addr);
+        if (holder == null) {
+            throw new IllegalStateException("用户未登录");
+        } else {
+            return holder.getMsg(millis);
         }
     }
 
     @Override
     public void login(@Nonnull String addr) {
-        rwLock.writeLock().lock();
-        try {
-            MsgHolder waiter = holders.get(addr);
-            if (waiter == null) {
-                waiter = new MsgHolder();
-                holders.put(addr, waiter);
-            } else {
-                waiter.setLastGet(System.currentTimeMillis());
-            }
-        } finally {
-            rwLock.writeLock().unlock();
-        }
+        MsgHolder holder = holders.computeIfAbsent(addr, s -> new MsgHolder());
+        holder.setLastGet(System.currentTimeMillis());
     }
 
     @Override
     public void logout(@Nonnull String addr) {
-        rwLock.writeLock().lock();
-        try {
-            holders.remove(addr);
-        } finally {
-            rwLock.writeLock().unlock();
-        }
+        holders.remove(addr);
     }
 
     /**
@@ -107,7 +77,7 @@ public class SXChatEngineImpl implements SXChatEngine {
         @Setter
         private long lastGet = System.currentTimeMillis();
 
-        synchronized final void putMsg(@Nonnull SXMsg msg) {
+        final void putMsg(@Nonnull SXMsg msg) {
             msgs.add(msg);
             if (semaphore.availablePermits() <= 0) {
                 semaphore.release();
@@ -115,7 +85,7 @@ public class SXChatEngineImpl implements SXChatEngine {
         }
 
         @Nonnull
-        public synchronized final SXMsg[] getMsg(long millis) {
+        public final SXMsg[] getMsg(long millis) {
             try {
                 if (millis > 0 && semaphore.tryAcquire(millis, TimeUnit.MILLISECONDS)) {
                     SXMsg[] result = msgs.toArray(ARR0);

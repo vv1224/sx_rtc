@@ -1,4 +1,4 @@
-package com.ddthree.sx_rtc.controller;
+package com.ddthree.sx_rtc.api;
 
 import com.ddthree.sx_rtc.engine.SXChatEngine;
 import com.ddthree.sx_rtc.service.IUserService;
